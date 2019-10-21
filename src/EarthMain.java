@@ -3,13 +3,12 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.lwjgl.opengl.GL11;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class EarthMain extends Game implements Scene {
 	private static final int FOX_ATTACK_DISTANCE = 5;
-	private static final int BUNNY_EAT_DISTANCE = 5;
+	private static final int REPRODUCING_TIME = 2000;
+	private static final int COOLDOWN_TIME = 8000;
 
 	public static void main(String[] args) {
 		EarthMain game = new EarthMain();
@@ -68,6 +67,10 @@ public class EarthMain extends Game implements Scene {
 		/* Consume the fallen (or plants) */
 		consumePrey(foxes);
 		consumePlants(bunnies);
+
+		/* Reproduce..!!? The key to 勝利! */
+		reproduce(bunnies);
+		stopMating(bunnies);
 
 		/* Deactivate the consumed */
 		deactivate(bunnies);
@@ -153,7 +156,7 @@ public class EarthMain extends Game implements Scene {
 				float distanceToEnemy = new Vector2f(fox.enemy.location.subtract(fox.location)).magnitude();
 				if (distanceToEnemy > FOX_ATTACK_DISTANCE) break;
 				fox.consumeFlesh(fox.enemy);
-				fox.direction = Vector2f.randomDirection();
+				fox.changeDirection();
 				fox.enemy = null;
 			}
 		}
@@ -164,9 +167,40 @@ public class EarthMain extends Game implements Scene {
 			if (bunny.target == null) continue;
 			if (bunny.getHitbox().intersects(bunny.target.getHitbox())) {
 				bunny.consumePlant(bunny.target);
-				bunny.direction = Vector2f.randomDirection();
+				bunny.changeDirection();
 				bunny.target = null;
 			}
+		}
+	}
+
+	private void reproduce(List<Bunny> bunnies) {
+		for (Bunny bunny : bunnies) {
+			if (!bunny.fleeing && !bunny.reproducing && bunny.cooldownTimer >= COOLDOWN_TIME) {
+				for (Bunny lover : bunnies) {
+					if (lover == bunny || lover.cooldownTimer < COOLDOWN_TIME) continue;
+					float distanceToLover = new Vector2f(lover.location.subtract(bunny.location)).magnitude();
+					if (!lover.fleeing && !lover.reproducing && distanceToLover < 5) {
+						bunny.mateWith(lover);
+					}
+				}
+			}
+		}
+	}
+
+	private void stopMating(List<Bunny> bunnies) {
+		List<Vector2f> locationsToSpawn = new LinkedList<>();
+		for (Bunny bunny : bunnies) {
+			if (!bunny.reproducing) continue;
+			if (bunny.reproducingTimer >= REPRODUCING_TIME) {
+				bunny.stopMating();
+				locationsToSpawn.add(bunny.location);
+			}
+		}
+		for (Vector2f location : locationsToSpawn) {
+			Bunny child = new Bunny(new Vector2f(location.x + 8, location.y + 8), 6, 6);
+			child.setColor(.8f, .8f, .8f);
+			child.changeDirection();
+			bunnies.add(child);
 		}
 	}
 
@@ -185,7 +219,7 @@ public class EarthMain extends Game implements Scene {
 
 	private void spawnPlants() {
 		Random r = new Random();
-		while (flora.size() < 50) {
+		while (flora.size() < 100) {
 			flora.add(new Flora(new Vector2f(r.nextFloat() * Game.ui.getWidth(), r.nextFloat() * Game.ui.getHeight())));
 		}
 	}

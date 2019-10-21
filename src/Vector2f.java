@@ -40,7 +40,9 @@ public class Vector2f {
 
 	public static Vector2f randomDirection() {
 		Random r = new Random();
-		return new Vector2f(r.nextFloat() - r.nextFloat(), r.nextFloat() - r.nextFloat());
+		Vector2f randomDirection = new Vector2f(r.nextFloat() - r.nextFloat(), r.nextFloat() - r.nextFloat());
+		randomDirection.normalize();
+		return randomDirection;
 	}
 
 	/* Returns the sum vector of these two vectors */
