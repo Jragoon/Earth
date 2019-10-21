@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EarthMain extends Game implements Scene {
-	private static int ENEMY_SPEED = 1;
-
 	public static void main(String[] args) {
 		EarthMain game = new EarthMain();
 		game.gameLoop();
@@ -29,20 +27,8 @@ public class EarthMain extends Game implements Scene {
 				new GLFWMouseButtonCallback() {
 					public void invoke(long window, int button, int action, int mods)
 					{
-						if (button==0 && action== GLFW.GLFW_PRESS) {
-							Vector2f lastClick = new Vector2f(Game.ui.getMouseLocation().x, Game.ui.getMouseLocation().y);
-							if (Game.ui.keyPressed(GLFW.GLFW_KEY_B)) {
-								Bunny spawn = new Bunny(lastClick, 10, 10);
-								spawn.setColor(1, 1, 1);
-								bunnies.add(spawn);
-								gotClick = true;
-							}
-							else if (Game.ui.keyPressed(GLFW.GLFW_KEY_F)) {
-								Fox spawn = new Fox(lastClick, 15, 15);
-								spawn.setColor(1, 1, 0);
-								foxes.add(spawn);
-								gotClick = true;
-							}
+						if (button == 0 && action == GLFW.GLFW_PRESS) {
+							gotClick = true;
 						}
 					}
 				});
@@ -52,15 +38,20 @@ public class EarthMain extends Game implements Scene {
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 		Vector2f coords = new Vector2f(Game.ui.getMouseLocation().x, Game.ui.getMouseLocation().y);
 
+		/* Spawn */
+		if (gotClick) spawnAnimals(coords);
+
 		/* Update */
 		marker.setLocation(coords);
+		update(bunnies, delta);
+		update(foxes, delta);
 
 		/* Draw */
 		marker.draw();
 		draw(bunnies);
 		draw(foxes);
 
-		/* Check collisions */
+		/* Check encounters */
 		testDeath(bunnies);
 		testDeath(foxes);
 		deactivate(bunnies);
@@ -92,104 +83,16 @@ public class EarthMain extends Game implements Scene {
 		}
 	}
 
-	/* BEGIN: GameObject implementations */
-
-	public class Target extends GameObject
-	{
-		private Vector2f location;
-		public void setLocation(Vector2f location)
-		{
-			this.hitbox.setBounds((int) location.x, (int) location.y, 10, 10);
-			this.location = location;
-			this.setColor(1, 0, 0);
+	private void spawnAnimals(Vector2f currentPos) {
+		if (Game.ui.keyPressed(GLFW.GLFW_KEY_B)) {
+			Bunny newbie = new Bunny(currentPos, 5, 5);
+			newbie.setColor(1, 1, 1);
+			bunnies.add(newbie);
 		}
-
-		public Vector2f getLocation() {
-			return this.location;
-		}
-
-		public void setColor(float r, float g, float b)
-		{
-			super.setColor(r, g, b);
-		}
-	}
-
-	public class Flora extends GameObject {
-		private Vector2f location;
-
-		public Flora(Vector2f origin) {
-			this.hitbox.setBounds((int) origin.x, (int) origin.y, 25, 25);
-			this.location = origin;
-			this.setColor(1, 1, 1);
-		}
-
-		public Vector2f getLocation() {
-			return this.location;
-		}
-
-		@Override
-		public void update(int delta) {
-			this.hitbox.x = (int) this.location.x;
-			this.hitbox.y = (int) this.location.y;
-		}
-	}
-
-	private class Animal extends GameObject {
-		protected Vector2f location;
-		protected Flora target;
-		protected Animal enemy;
-
-		public Animal(Vector2f origin, int width, int height) {
-			this.hitbox.x = (int) origin.x;
-			this.hitbox.y = (int) origin.y;
-			this.location = origin;
-			this.hitbox.width = width;
-			this.hitbox.height = height;
-			this.setColor(0, 0 , 1);
-		}
-
-		public void setTarget(Flora target) {
-			this.target = target;
-		}
-
-		public void setEnemy(Animal enemy) {
-			this.enemy = enemy;
-		}
-
-		public Vector2f getLocation() {
-			return location;
-		}
-
-		@Override
-		public void setColor(float r, float g, float b) {
-			super.setColor(r, g, b);
-		}
-
-		@Override
-		public void update(int delta) {
-			Vector2f direction = this.enemy.getLocation().subtract(this.location);
-			direction.normalize();
-
-			if (Math.abs(this.location.x - this.enemy.getLocation().x) > this.hitbox.width ||
-					Math.abs(this.location.y - this.enemy.getLocation().y) > this.hitbox.height) {
-				this.location.x += direction.x * ENEMY_SPEED;
-				this.location.y += direction.y * ENEMY_SPEED;
-			}
-
-			this.hitbox.x = (int) this.location.x;
-			this.hitbox.y = (int) this.location.y;
-		}
-	}
-
-	private class Bunny extends Animal {
-		public Bunny(Vector2f origin, int width, int height) {
-			super(origin, width, height);
-		}
-	}
-
-	private class Fox extends Animal {
-		public Fox(Vector2f origin, int width, int height) {
-			super(origin, width, height);
+		else if (Game.ui.keyPressed(GLFW.GLFW_KEY_F)) {
+			Fox newbie = new Fox(currentPos, 15, 15);
+			newbie.setColor(1, 1, 0);
+			foxes.add(newbie);
 		}
 	}
 }
