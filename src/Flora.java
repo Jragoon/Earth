@@ -2,11 +2,13 @@ import edu.utc.game.GameObject;
 
 public class Flora extends GameObject {
 	private Vector2f location;
+	public float health = 10;
+	public float satiety = 10;
 
 	public Flora(Vector2f origin) {
 		this.hitbox.setBounds((int) origin.x, (int) origin.y, 25, 25);
 		this.location = origin;
-		this.setColor(1, 1, 1);
+		this.setColor(0, 1, 1);
 	}
 
 	public Vector2f getLocation() {
