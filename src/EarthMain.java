@@ -5,6 +5,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class EarthMain extends Game implements Scene {
 	public static void main(String[] args) {
@@ -12,6 +13,7 @@ public class EarthMain extends Game implements Scene {
 		game.gameLoop();
 	}
 
+	Random r = new Random();
 	private boolean gotClick = false;
 	private List<Flora> flora = new ArrayList<>();
 	private List<Bunny> bunnies = new ArrayList<>();
@@ -51,9 +53,15 @@ public class EarthMain extends Game implements Scene {
 		draw(bunnies);
 		draw(foxes);
 
+		/* Notices targets */
+		scoutForPrey(foxes, bunnies);
+
 		/* Check encounters */
-		testDeath(bunnies);
-		testDeath(foxes);
+		doAttacks(foxes);
+
+		/* Consume the fallen */
+		consumeFood(foxes);
+
 		deactivate(bunnies);
 		deactivate(foxes);
 
@@ -77,9 +85,37 @@ public class EarthMain extends Game implements Scene {
 		objects.removeIf(o -> !o.isActive());
 	}
 
-	private <T extends GameObject> void testDeath(List<T> entities) {
-		for (GameObject go : entities) {
-			/* Logic for death? */
+	private void doAttacks(List<Fox> foxes) {
+		for (Fox fox : foxes) {
+			if (fox.enemy == null) continue;
+			float distanceToEnemy = new Vector2f(fox.enemy.location.subtract(fox.location)).magnitude();
+			if (distanceToEnemy < 5) {
+				fox.attack(fox.enemy);
+			}
+		}
+	}
+
+	private void scoutForPrey(List<Fox> foxes, List<Bunny> bunnies) {
+		for (Fox fox : foxes) {
+			if (fox.enemy != null) continue;
+			for (Bunny bunny : bunnies) {
+				float distanceToEnemy = new Vector2f(bunny.location.subtract(fox.location)).magnitude();
+				if (distanceToEnemy <= fox.viewDistance) {
+					fox.enemy = bunny;
+					break;
+				}
+			}
+		}
+	}
+
+	private void consumeFood(List<Fox> foxes) {
+		for (Fox fox : foxes) {
+			if (fox.enemy == null) continue;
+			if (fox.enemy.isDead) {
+				fox.consumeFlesh(fox.enemy);
+				fox.direction = new Vector2f(r.nextFloat() - r.nextFloat(), r.nextFloat() - r.nextFloat());
+				fox.enemy = null;
+			}
 		}
 	}
 
@@ -90,8 +126,8 @@ public class EarthMain extends Game implements Scene {
 			bunnies.add(newbie);
 		}
 		else if (Game.ui.keyPressed(GLFW.GLFW_KEY_F)) {
-			Fox newbie = new Fox(currentPos, 15, 15);
-			newbie.setColor(1, 1, 0);
+			Fox newbie = new Fox(currentPos, 10, 10);
+			newbie.setColor(1, .6f, 0);
 			foxes.add(newbie);
 		}
 	}

@@ -24,10 +24,15 @@ public class Vector2f {
 		return result;
 	}
 
-	/* Normalize the vector if you are concerned with direction */
-	public void normalize() {
+	public float magnitude() {
 		float magnitudeSquared = this.dotProduct(this);
 		float magnitude = (float) Math.sqrt(magnitudeSquared);
+		return magnitude;
+	}
+
+	/* Normalize the vector if you are concerned with direction */
+	public void normalize() {
+		float magnitude = this.magnitude();
 		this.x /= magnitude;
 		this.y /= magnitude;
 	}

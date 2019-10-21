@@ -2,7 +2,7 @@ import edu.utc.game.GameObject;
 
 import java.util.Random;
 
-public class Animal extends GameObject {
+public abstract class Animal extends GameObject {
 	protected float speed;
 	protected float hp;
 	protected float maxHP;

@@ -16,10 +16,16 @@ public class Fox extends Animal implements Carnivore {
 		float foodValue = prey.maxHunger - prey.hunger;
 		this.hunger = Math.min(0, this.hunger - foodValue);
 		this.hp = Math.max(this.maxHP, this.hp + foodValue);
+		prey.deactivate();
 	}
 
 	@Override
 	public void update(int delta) {
+		if (this.enemy != null) {
+			this.direction = new Vector2f(this.enemy.location.subtract(this.location));
+			this.direction.normalize();
+		}
+
 		if (this.location.x <= 0 || this.location.x + this.hitbox.width > Game.ui.getWidth()) {
 			this.direction.x = -this.direction.x;
 		}
