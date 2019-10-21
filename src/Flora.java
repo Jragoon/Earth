@@ -6,13 +6,18 @@ public class Flora extends GameObject {
 	public float satiety = 10;
 
 	public Flora(Vector2f origin) {
-		this.hitbox.setBounds((int) origin.x, (int) origin.y, 25, 25);
 		this.location = origin;
+		this.hitbox.setBounds((int) origin.x, (int) origin.y, 8, 8);
 		this.setColor(0, 1, 1);
 	}
 
 	public Vector2f getLocation() {
 		return this.location;
+	}
+
+	@Override
+	public void setColor(float r, float g, float b) {
+		super.setColor(r, g, b);
 	}
 
 	@Override

@@ -1,4 +1,5 @@
 import java.lang.Math;
+import java.util.Random;
 
 public class Vector2f {
 	public float x;
@@ -35,6 +36,11 @@ public class Vector2f {
 		float magnitude = this.magnitude();
 		this.x /= magnitude;
 		this.y /= magnitude;
+	}
+
+	public static Vector2f randomDirection() {
+		Random r = new Random();
+		return new Vector2f(r.nextFloat() - r.nextFloat(), r.nextFloat() - r.nextFloat());
 	}
 
 	/* Returns the sum vector of these two vectors */

@@ -8,12 +8,14 @@ import java.util.List;
 import java.util.Random;
 
 public class EarthMain extends Game implements Scene {
+	private static final int FOX_ATTACK_DISTANCE = 5;
+	private static final int BUNNY_EAT_DISTANCE = 5;
+
 	public static void main(String[] args) {
 		EarthMain game = new EarthMain();
 		game.gameLoop();
 	}
 
-	Random r = new Random();
 	private boolean gotClick = false;
 	private List<Flora> flora = new ArrayList<>();
 	private List<Bunny> bunnies = new ArrayList<>();
@@ -38,13 +40,14 @@ public class EarthMain extends Game implements Scene {
 
 	public Scene drawFrame(int delta) {
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-		Vector2f coords = new Vector2f(Game.ui.getMouseLocation().x, Game.ui.getMouseLocation().y);
+		Vector2f coordinates = new Vector2f(Game.ui.getMouseLocation().x, Game.ui.getMouseLocation().y);
 
 		/* Spawn */
-		if (gotClick) spawnAnimals(coords);
+		if (gotClick) spawnEntities(coordinates);
+		spawnPlants();
 
 		/* Update */
-		marker.setLocation(coords);
+		marker.setLocation(coordinates);
 		update(bunnies, delta);
 		update(foxes, delta);
 
@@ -52,18 +55,24 @@ public class EarthMain extends Game implements Scene {
 		marker.draw();
 		draw(bunnies);
 		draw(foxes);
+		draw(flora);
 
-		/* Notices targets */
+		/* Notice targets */
 		scoutForPrey(foxes, bunnies);
+		scoutForPlants(bunnies, flora);
+		noticePredators(bunnies, foxes);
 
 		/* Check encounters */
 		doAttacks(foxes);
 
-		/* Consume the fallen */
-		consumeFood(foxes);
+		/* Consume the fallen (or plants) */
+		consumePrey(foxes);
+		consumePlants(bunnies);
 
+		/* Deactivate the consumed */
 		deactivate(bunnies);
 		deactivate(foxes);
+		deactivate(flora);
 
 		gotClick = false;
 		return this;
@@ -89,7 +98,7 @@ public class EarthMain extends Game implements Scene {
 		for (Fox fox : foxes) {
 			if (fox.enemy == null) continue;
 			float distanceToEnemy = new Vector2f(fox.enemy.location.subtract(fox.location)).magnitude();
-			if (distanceToEnemy < 5) {
+			if (distanceToEnemy < FOX_ATTACK_DISTANCE) {
 				fox.attack(fox.enemy);
 			}
 		}
@@ -108,27 +117,76 @@ public class EarthMain extends Game implements Scene {
 		}
 	}
 
-	private void consumeFood(List<Fox> foxes) {
+	private void scoutForPlants(List<Bunny> bunnies, List<Flora> plants) {
+		for (Bunny bunny : bunnies) {
+			if (bunny.target != null) continue;
+			for (Flora plant : plants) {
+				float distanceToPlant = new Vector2f(plant.getLocation().subtract(bunny.location)).magnitude();
+				if (distanceToPlant <= bunny.viewDistance) {
+					bunny.target = plant;
+					break;
+				}
+			}
+		}
+	}
+
+	private void noticePredators(List<Bunny> bunnies, List<Fox> foxes) {
+		for (Bunny bunny : bunnies) {
+			for (Fox fox : foxes) {
+				Vector2f toEnemy = new Vector2f(fox.location.subtract(bunny.location));
+				float distanceToEnemy = toEnemy.magnitude();
+				if (distanceToEnemy <= bunny.viewDistance) {
+					toEnemy.normalize();
+					Vector2f fleeDirection = new Vector2f(-toEnemy.x, -toEnemy.y);
+					bunny.direction = fleeDirection;
+					bunny.fleeing = true;
+					break;
+				}
+			}
+		}
+	}
+
+	private void consumePrey(List<Fox> foxes) {
 		for (Fox fox : foxes) {
 			if (fox.enemy == null) continue;
 			if (fox.enemy.isDead) {
+				float distanceToEnemy = new Vector2f(fox.enemy.location.subtract(fox.location)).magnitude();
+				if (distanceToEnemy > FOX_ATTACK_DISTANCE) break;
 				fox.consumeFlesh(fox.enemy);
-				fox.direction = new Vector2f(r.nextFloat() - r.nextFloat(), r.nextFloat() - r.nextFloat());
+				fox.direction = Vector2f.randomDirection();
 				fox.enemy = null;
 			}
 		}
 	}
 
-	private void spawnAnimals(Vector2f currentPos) {
+	private void consumePlants(List<Bunny> bunnies) {
+		for (Bunny bunny : bunnies) {
+			if (bunny.target == null) continue;
+			if (bunny.getHitbox().intersects(bunny.target.getHitbox())) {
+				bunny.consumePlant(bunny.target);
+				bunny.direction = Vector2f.randomDirection();
+				bunny.target = null;
+			}
+		}
+	}
+
+	private void spawnEntities(Vector2f currentPos) {
 		if (Game.ui.keyPressed(GLFW.GLFW_KEY_B)) {
-			Bunny newbie = new Bunny(currentPos, 5, 5);
+			Bunny newbie = new Bunny(currentPos, 6, 6);
 			newbie.setColor(1, 1, 1);
 			bunnies.add(newbie);
 		}
 		else if (Game.ui.keyPressed(GLFW.GLFW_KEY_F)) {
-			Fox newbie = new Fox(currentPos, 10, 10);
+			Fox newbie = new Fox(currentPos, 12, 12);
 			newbie.setColor(1, .6f, 0);
 			foxes.add(newbie);
+		}
+	}
+
+	private void spawnPlants() {
+		Random r = new Random();
+		while (flora.size() < 50) {
+			flora.add(new Flora(new Vector2f(r.nextFloat() * Game.ui.getWidth(), r.nextFloat() * Game.ui.getHeight())));
 		}
 	}
 }

@@ -1,37 +1,38 @@
-import edu.utc.game.Game;
-
 public class Bunny extends Animal implements Herbivore {
+	int attentionTimer = 0;
+	int hungerTimer = 0;
+	boolean fleeing;
+
 	public Bunny(Vector2f origin, int width, int height) {
 		super(origin, width, height);
-		this.speed = .3f;
+		this.speed = .45f;
 		this.hp = 10;
 		this.maxHP = 10;
 		this.attack = 2;
 		this.hunger = 0;
 		this.maxHunger = 20;
 		this.viewDistance = 120;
+		this.attentionSpan = 3000;
+		this.fleeing = false;
 	}
 
 	public void consumePlant(Flora plant) {
 		this.hunger = Math.max(0, this.hunger - plant.satiety);
 		this.hp = Math.min(this.maxHP, this.hp + plant.health);
+		plant.deactivate();
 	}
 
 	@Override
 	public void update(int delta) {
-		if (this.location.x <= 0 || this.location.x + this.hitbox.width > Game.ui.getWidth()) {
-			this.direction.x = -this.direction.x;
+		attentionTimer += delta;
+		hungerTimer += delta;
+		if (attentionChanged(attentionTimer)) {
+			fleeing = false;
+			attentionTimer = 0;
 		}
-		if (this.location.y <= 0 || this.location.y + this.hitbox.height > Game.ui.getHeight()) {
-			this.direction.y = -this.direction.y;
-		}
-		this.location.x += this.direction.x * this.speed;
-		this.location.y += this.direction.y * this.speed;
-		this.hitbox.x = (int) this.location.x;
-		this.hitbox.y = (int) this.location.y;
-	}
-
-	public void scoutForFood() {
-
+		if (gainedHunger(hungerTimer)) hungerTimer = 0;
+		dieIfTooHungry();
+		if (this.target != null && !fleeing) pursuePlant();
+		moveWithinConfines();
 	}
 }

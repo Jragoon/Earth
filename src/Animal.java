@@ -1,6 +1,5 @@
+import edu.utc.game.Game;
 import edu.utc.game.GameObject;
-
-import java.util.Random;
 
 public abstract class Animal extends GameObject {
 	protected float speed;
@@ -10,13 +9,14 @@ public abstract class Animal extends GameObject {
 	protected float hunger;
 	protected float maxHunger;
 	protected float viewDistance;
+	protected float attentionSpan;
 	public boolean isDead = false;
 
 	protected Flora target;
 	protected Animal enemy;
 	protected Vector2f location;
-	Random r = new Random();
-	protected Vector2f direction = new Vector2f(r.nextFloat() - .5f, r.nextFloat() - .5f);
+	protected Vector2f direction = Vector2f.randomDirection();
+	protected float hungerRate = 3200;
 
 	public Animal(Vector2f origin, int width, int height) {
 		this.hitbox.x = (int) origin.x;
@@ -37,23 +37,60 @@ public abstract class Animal extends GameObject {
 		enemy.takeDamage(this.attack);
 	}
 
-	private void die() {
+	protected void pursueEnemy() {
+		this.direction = new Vector2f(this.enemy.location.subtract(this.location));
+		this.direction.normalize();
+	}
+
+	protected void pursuePlant() {
+		this.direction = new Vector2f(this.target.getLocation().subtract(this.location));
+		this.direction.normalize();
+	}
+
+	protected boolean attentionChanged(int currentAttention) {
+		if (currentAttention > this.attentionSpan) {
+			changeDirection();
+			return true;
+		}
+		return false;
+	}
+
+	protected boolean gainedHunger(int hungerTimer) {
+		if (hungerTimer > this.hungerRate) {
+			this.hunger++;
+			return true;
+		}
+		return false;
+	}
+
+	protected void die() {
 		this.speed = 0;
 		this.attack = 0;
 		this.isDead = true;
 		this.setColor(0f, 0f, 0f);
 	}
 
-	public void setTarget(Flora target) {
-		this.target = target;
+	protected void changeDirection() {
+		this.direction = Vector2f.randomDirection();
 	}
 
-	public void setEnemy(Animal enemy) {
-		this.enemy = enemy;
+	protected void moveWithinConfines() {
+		if (this.location.x <= 0 || this.location.x + this.hitbox.width > Game.ui.getWidth()) {
+			this.direction.x = -this.direction.x;
+		}
+		if (this.location.y <= 0 || this.location.y + this.hitbox.height > Game.ui.getHeight()) {
+			this.direction.y = -this.direction.y;
+		}
+		this.location.x += this.direction.x * this.speed;
+		this.location.y += this.direction.y * this.speed;
+		this.hitbox.x = (int) this.location.x;
+		this.hitbox.y = (int) this.location.y;
 	}
 
-	public Vector2f getLocation() {
-		return location;
+	protected void dieIfTooHungry() {
+		if (this.hunger == this.maxHunger) {
+			die();
+		}
 	}
 
 	@Override
@@ -62,21 +99,5 @@ public abstract class Animal extends GameObject {
 	}
 
 	@Override
-	public void update(int delta) {
-		if (this.enemy != null) pursue(this.enemy);
-
-		this.hitbox.x = (int) this.location.x;
-		this.hitbox.y = (int) this.location.y;
-	}
-
-	private void pursue(Animal enemy) {
-		Vector2f direction = this.enemy.getLocation().subtract(this.location);
-		direction.normalize();
-
-		if (Math.abs(this.location.x - this.enemy.getLocation().x) > this.hitbox.width ||
-				Math.abs(this.location.y - this.enemy.getLocation().y) > this.hitbox.height) {
-			this.location.x += direction.x * this.speed;
-			this.location.y += direction.y * this.speed;
-		}
-	}
+	public abstract void update(int delta);
 }
